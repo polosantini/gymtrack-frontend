@@ -1,0 +1,16 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; color: #1b1d21; background: #f5f5f2; }
+.shell { display: flex; min-height: 100vh; }
+.sidebar { width: 220px; padding: 20px 14px; background: #16181c; color: #fff; display: flex; flex-direction: column; gap: 18px; }
+.marca { margin: 0; font-size: 22px; }
+.actuar-como { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #a9aeb6; }
+.actuar-como select { padding: 6px; border-radius: 6px; }
+.sidebar nav { display: flex; flex-direction: column; gap: 4px; }
+.sidebar nav a { color: #c9cdd3; text-decoration: none; padding: 8px 10px; border-radius: 6px; }
+.sidebar nav a.activo, .sidebar nav a:hover { background: #2a2d33; color: #fff; }
+.contenido { flex: 1; padding: 28px 32px; }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e6e6e2; }
+.muted { color: #6b7079; }
+.error { color: #b42318; }
+.no-leida { font-weight: 600; }
