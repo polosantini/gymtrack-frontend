@@ -24,5 +24,5 @@ export function useCarga<T>(cargar: () => Promise<T>, deps: unknown[] = []) {
     void recargar()
   }, [recargar])
 
-  return { datos, cargando, error, recargar }
+  return { datos, cargando, error, recargar, setDatos }
 }

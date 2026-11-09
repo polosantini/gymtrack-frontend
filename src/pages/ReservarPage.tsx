@@ -12,7 +12,7 @@ export function ReservarPage() {
       <ul>
         {datos?.map((c) => (
           <li key={c.id}>
-            {c.nombre} · {c.horaInicio} · {c.cuposLibres > 0 ? `${c.cuposLibres} cupos libres` : 'Llena (lista de espera)'}
+            {c.nombre} · {c.fecha} {c.hora} · {c.cuposLibres > 0 ? `${c.cuposLibres} cupos libres` : 'Llena (lista de espera)'}
           </li>
         ))}
       </ul>

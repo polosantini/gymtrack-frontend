@@ -1,66 +1,81 @@
-// Tipos del contrato entre frontend y backend (sección "Contratos" de la ruta de trabajo).
-// Si un campo cambia en el backend, se cambia aquí y en el documento el mismo día.
+// Tipos del contrato entre frontend y backend.
+// Fuente: contratos congelados en #8 + DTOs reales del backend (main) y la colección Postman.
+// Si un campo cambia en el backend, se cambia aquí y se anota en el hilo de #8 el mismo día.
+//
+// Formatos: fecha 'YYYY-MM-DD' · fecha y hora 'YYYY-MM-DDTHH:mm:ss' · hora 'HH:mm'
 
 export type Plan = 'BASICO' | 'FULL' | 'PREMIUM'
 export type Periodo = 'MENSUAL' | 'TRIMESTRAL' | 'ANUAL'
-export type EstadoMembresia = 'ACTIVA' | 'VENCIDA' | 'SUSPENDIDA'
+export type EstadoMembresia = 'SUSPENDIDA' | 'ACTIVA' | 'VENCIDA'
 export type EstadoReserva = 'CONFIRMADA' | 'EN_ESPERA' | 'CANCELADA'
-export type EstadoPago = 'APROBADO' | 'PENDIENTE' | 'RECHAZADO'
-export type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'PSE'
-export type DiaSemana = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY'
+export type EstadoPago = 'REGISTRADO' | 'PENDIENTE' | 'COMPLETADO' | 'FALLIDO'
+export type DiaSemana = 'LUNES' | 'MARTES' | 'MIERCOLES' | 'JUEVES' | 'VIERNES' | 'SABADO' | 'DOMINGO'
+export type TipoNotificacion = 'CONFIRMACION_PAGO' | 'VENCIMIENTO_PROXIMO' | 'CUPO_LIBERADO'
 
-// ---------- Miembros (8081) ----------
+/** Formato uniforme de error de los tres servicios. */
+export interface ErrorApi {
+  timestamp: string
+  status: number
+  error: string
+  message: string
+  path: string
+}
+
+// ---------- Miembros y Membresías (8081) ----------
 export interface Membresia {
   id: number
   plan: Plan
   estado: EstadoMembresia
-  fechaInicio: string // 'YYYY-MM-DD'
-  fechaVencimiento: string
+  fechaInicio: string // fecha
+  fechaVencimiento: string // fecha
 }
 
+/** GET /api/miembros, GET /api/miembros/{id}, respuesta de POST /api/miembros */
 export interface Miembro {
   id: number
   nombre: string
-  documento: string
-  correo: string
-  telefono: string | null
-  fechaRegistro: string
+  email: string
+  fechaRegistro: string // fecha y hora
   membresia: Membresia | null
 }
 
+/** POST /api/miembros */
 export interface NuevoMiembro {
   nombre: string
-  documento: string
-  correo: string
-  telefono?: string
+  email: string
 }
 
+/** GET /api/planes */
 export interface PlanInfo {
-  codigo: Plan
-  nombre: string
-  precios: Record<Periodo, number>
-  beneficios: string[]
+  nombre: Plan
+  precioMensual: number
+  precioTrimestral: number
+  precioAnual: number
 }
 
+/** GET /api/miembros/{id}/acceso */
 export interface Acceso {
   activa: boolean
   plan: Plan | null
 }
 
 // ---------- Clases y Reservas (8082) ----------
+/** GET /api/clases (cuposLibres corresponde a la sesión de `fecha`) */
 export interface Clase {
   id: number
   nombre: string
   instructor: string
-  diasSemana: DiaSemana[]
-  horaInicio: string // 'HH:mm'
+  dias: DiaSemana[]
+  hora: string // 'HH:mm'
   duracionMinutos: number
-  aforoMaximo: number
+  aforo: number
   sala: string
-  cuposLibres: number // para la fecha consultada
+  fecha: string // próxima sesión (o la fecha consultada)
+  cuposLibres: number
 }
 
-export type NuevaClase = Omit<Clase, 'id' | 'cuposLibres'>
+/** POST /api/clases */
+export type NuevaClase = Omit<Clase, 'id' | 'fecha' | 'cuposLibres'>
 
 export interface Reserva {
   id: number
@@ -68,19 +83,27 @@ export interface Reserva {
   claseId: number
   claseNombre: string
   fecha: string
-  horaInicio: string
+  hora: string
   estado: EstadoReserva
   posicionEspera: number | null
-  asistio: boolean | null
+  asistencia: boolean | null
 }
 
+/** POST /api/reservas */
 export interface NuevaReserva {
   miembroId: number
   claseId: number
   fecha: string
 }
 
+/** GET /api/clases/{id}/reservas?fecha= */
 export interface ReservasDeSesion {
+  claseId: number
+  claseNombre: string
+  fecha: string
+  hora: string
+  aforo: number
+  cuposLibres: number
   confirmados: Reserva[]
   enEspera: Reserva[]
 }
@@ -92,18 +115,19 @@ export interface Pago {
   plan: Plan
   periodo: Periodo
   monto: number
-  metodo: MetodoPago
+  metodo: string // libre según #8
   estado: EstadoPago
-  fecha: string
+  fecha: string // fecha y hora
 }
 
+/** POST /api/pagos */
 export type NuevoPago = Pick<Pago, 'miembroId' | 'plan' | 'periodo' | 'monto' | 'metodo'>
 
 export interface Notificacion {
   id: number
   miembroId: number
-  tipo: 'PAGO_CONFIRMADO' | 'MEMBRESIA_POR_VENCER' | 'CUPO_ASIGNADO'
+  tipo: TipoNotificacion
   mensaje: string
-  fecha: string
+  fecha: string // fecha y hora
   leida: boolean
 }

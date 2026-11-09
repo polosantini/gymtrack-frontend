@@ -1,4 +1,5 @@
 // Cliente HTTP común. Todas las llamadas al backend pasan por aquí.
+import type { ErrorApi } from './types'
 
 // Por defecto usa datos simulados; con VITE_USAR_MOCK=false en el .env llama al backend real
 export const USAR_MOCK = import.meta.env.VITE_USAR_MOCK !== 'false'
@@ -27,11 +28,11 @@ export async function pedir<T>(ruta: string, metodo: Metodo = 'GET', cuerpo?: un
   }
 
   if (!respuesta.ok) {
-    // El backend responde los errores como {"mensaje": "..."}
-    let mensaje = `Error ${respuesta.status}`
+    // Los tres servicios responden {timestamp, status, error, message, path} (contrato #8, sección 5)
+    let mensaje = mensajePorEstado(respuesta.status)
     try {
-      const datos = (await respuesta.json()) as { mensaje?: string }
-      if (datos.mensaje) mensaje = datos.mensaje
+      const datos = (await respuesta.json()) as Partial<ErrorApi>
+      if (datos.message) mensaje = datos.message
     } catch {
       // la respuesta no traía JSON
     }
@@ -42,9 +43,37 @@ export async function pedir<T>(ruta: string, metodo: Metodo = 'GET', cuerpo?: un
   return (await respuesta.json()) as T
 }
 
+function mensajePorEstado(status: number): string {
+  if (status === 400) return 'Los datos enviados no son válidos'
+  if (status === 404) return 'No encontramos lo que buscabas'
+  if (status === 409) return 'La operación entra en conflicto con los datos existentes'
+  if (status >= 500) return 'No hay conexión con el servidor'
+  return `Error ${status}`
+}
+
+// ---------- Simulación (solo con USAR_MOCK) ----------
+// Para demostrar los estados en la sustentación, agrega a la URL:
+//   ?simular-error  → todas las llamadas fallan con "No hay conexión con el servidor"
+//   ?simular-lento  → las respuestas tardan 3 segundos (se ven los esqueletos de carga)
+
+function bandera(nombre: string): boolean {
+  return new URLSearchParams(window.location.search).has(nombre)
+}
+
 /** Devuelve datos simulados con un pequeño retraso, como si vinieran del servidor. */
 export function simular<T>(datos: T, ms = 300): Promise<T> {
-  return new Promise((resolver) => setTimeout(() => resolver(structuredClone(datos)), ms))
+  const espera = bandera('simular-lento') ? 3000 : ms
+  return new Promise((resolver, rechazar) =>
+    setTimeout(() => {
+      if (bandera('simular-error')) rechazar(new ApiError(0, 'No hay conexión con el servidor'))
+      else resolver(structuredClone(datos))
+    }, espera),
+  )
+}
+
+/** Simula una respuesta de error del backend (código HTTP + su "message"). */
+export function simularError(status: number, mensaje: string, ms = 300): Promise<never> {
+  return new Promise((_, rechazar) => setTimeout(() => rechazar(new ApiError(status, mensaje)), ms))
 }
 
 /** Construye "?a=1&b=2" ignorando los valores vacíos. */
