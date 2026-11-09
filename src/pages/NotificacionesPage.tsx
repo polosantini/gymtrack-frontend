@@ -2,6 +2,7 @@ import { notificacionesApi } from '../api/pagos'
 import { Cargando, ErrorCarga } from '../components/Estado'
 import { useUsuarioActual } from '../context/usuarioActual'
 import { useCarga } from '../hooks/useCarga'
+import { fecha } from '../utils/formato'
 
 export function NotificacionesPage() {
   const { usuario } = useUsuarioActual()
@@ -16,7 +17,7 @@ export function NotificacionesPage() {
       <ul>
         {datos?.map((n) => (
           <li key={n.id} className={n.leida ? '' : 'no-leida'}>
-            {n.fecha} · {n.mensaje}
+            {fecha(n.fecha)} · {n.mensaje}
           </li>
         ))}
       </ul>
