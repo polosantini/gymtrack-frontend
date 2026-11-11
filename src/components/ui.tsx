@@ -8,11 +8,16 @@ export function Badge({ children, tono = 'neutral' }: { children: ReactNode; ton
   return <span className={`badge badge-${tono}`}>{children}</span>
 }
 
-export function PageHeader({ titulo, accion, alAccionar }: { titulo: string; accion?: string; alAccionar?: () => void }) {
+export function PageHeader({ titulo, accion, alAccionar, contexto = 'Panel de administración' }: {
+  titulo: string
+  accion?: string
+  alAccionar?: () => void
+  contexto?: string
+}) {
   return (
     <header className="page-header">
       <div>
-        <p>Panel de administración</p>
+        <p>{contexto}</p>
         <h1>{titulo}</h1>
       </div>
       {accion && (

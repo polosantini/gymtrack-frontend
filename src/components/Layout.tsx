@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { miembrosApi } from '../api/miembros'
 import { useUsuarioActual } from '../context/usuarioActual'
 import { useCarga } from '../hooks/useCarga'
-import { iniciales } from '../utils/formato'
+import { iniciales, NOMBRE_ESTADO_MEMBRESIA, NOMBRE_PLAN } from '../utils/formato'
 import { Icono, type NombreIcono } from './Icono'
 
 interface ItemMenu {
@@ -17,10 +17,11 @@ const MENU_ADMIN: ItemMenu[] = [
   { ruta: '/pagos', texto: 'Pagos', icono: 'card' },
 ]
 
+// Notificaciones entra al menú en la Fase 3 (#36); la ruta /notificaciones ya existe.
 const MENU_MIEMBRO: ItemMenu[] = [
-  { ruta: '/reservar', texto: 'Reservar', icono: 'calendar' },
+  { ruta: '/reservar', texto: 'Reservar clases', icono: 'calendar' },
   { ruta: '/mis-reservas', texto: 'Mis reservas', icono: 'list' },
-  { ruta: '/notificaciones', texto: 'Notificaciones', icono: 'bell' },
+  { ruta: '/mi-membresia', texto: 'Mi membresía', icono: 'card' },
 ]
 
 export function Layout() {
@@ -30,6 +31,14 @@ export function Layout() {
   const esAdmin = usuario.rol === 'ADMIN'
   const menu = esAdmin ? MENU_ADMIN : MENU_MIEMBRO
   const nombre = esAdmin ? 'Administrador' : usuario.nombre
+  const membresia = esAdmin ? null : miembros.datos?.find((m) => m.id === usuario.miembroId)?.membresia
+  const detalle = esAdmin
+    ? 'Panel de gestión'
+    : !membresia
+      ? 'Sin membresía'
+      : membresia.estado === 'ACTIVA'
+        ? `Plan ${NOMBRE_PLAN[membresia.plan]}`
+        : `Membresía ${NOMBRE_ESTADO_MEMBRESIA[membresia.estado].toLowerCase()}`
 
   const cambiar = (valor: string) => {
     if (valor === 'ADMIN') {
@@ -60,7 +69,7 @@ export function Layout() {
           </select>
         </div>
         <nav aria-label="Navegación principal">
-          <p>{esAdmin ? 'GESTIÓN' : 'MI CUENTA'}</p>
+          <p>{esAdmin ? 'GESTIÓN' : 'MI ESPACIO'}</p>
           {menu.map((item) => (
             <NavLink key={item.ruta} to={item.ruta} className={({ isActive }) => (isActive ? 'active' : '')}>
               <Icono nombre={item.icono} tamano={19} />
@@ -72,7 +81,7 @@ export function Layout() {
           <span>{esAdmin ? 'GT' : iniciales(nombre)}</span>
           <div>
             <strong>{nombre}</strong>
-            <small>{esAdmin ? 'Panel de gestión' : 'Miembro'}</small>
+            <small>{detalle}</small>
           </div>
         </div>
       </aside>

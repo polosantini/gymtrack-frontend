@@ -30,6 +30,9 @@ export const planesMock: PlanInfo[] = [
   { nombre: 'PREMIUM', precioMensual: 120000, precioTrimestral: 324000, precioAnual: 1152000 },
 ]
 
+// IDs fijos: clases-service referencia 1–4 en sus reservas de demo.
+//   1 Ana BASICO SUSPENDIDA · 2 Luis FULL ACTIVA · 3 Sara PREMIUM SUSPENDIDA · 4 Diego BASICO ACTIVA
+//   5 Carlos FULL VENCIDA · 6 María PREMIUM ACTIVA · 7 Pedro sin membresía
 export const miembrosMock: Miembro[] = [
   { id: 1, nombre: 'Ana', email: 'ana@test.com', fechaRegistro: ahora(),
     membresia: { id: 1, plan: 'BASICO', estado: 'SUSPENDIDA', fechaInicio: hoyMas(0), fechaVencimiento: hoyMas(30) } },
@@ -37,6 +40,13 @@ export const miembrosMock: Miembro[] = [
     membresia: { id: 2, plan: 'FULL', estado: 'ACTIVA', fechaInicio: hoyMas(0), fechaVencimiento: hoyMas(90) } },
   { id: 3, nombre: 'Sara', email: 'sara@test.com', fechaRegistro: ahora(),
     membresia: { id: 3, plan: 'PREMIUM', estado: 'SUSPENDIDA', fechaInicio: hoyMas(0), fechaVencimiento: hoyMas(365) } },
+  { id: 4, nombre: 'Diego', email: 'diego@test.com', fechaRegistro: ahora(),
+    membresia: { id: 4, plan: 'BASICO', estado: 'ACTIVA', fechaInicio: hoyMas(0), fechaVencimiento: hoyMas(30) } },
+  { id: 5, nombre: 'Carlos', email: 'carlos@test.com', fechaRegistro: ahora(),
+    membresia: { id: 5, plan: 'FULL', estado: 'VENCIDA', fechaInicio: hoyMas(-120), fechaVencimiento: hoyMas(-30) } },
+  { id: 6, nombre: 'María', email: 'maria@test.com', fechaRegistro: ahora(),
+    membresia: { id: 6, plan: 'PREMIUM', estado: 'ACTIVA', fechaInicio: hoyMas(0), fechaVencimiento: hoyMas(365) } },
+  { id: 7, nombre: 'Pedro', email: 'pedro@test.com', fechaRegistro: ahora(), membresia: null },
 ]
 
 // ---------- Clases (clases-service/data.sql) ----------
@@ -69,7 +79,7 @@ export interface ReservaGuardada {
 }
 
 export const reservasMock: ReservaGuardada[] = [
-  // Spinning el martes 17: aforo 3 lleno + 1 en espera
+  // Spinning el martes 17: aforo 3 lleno + Diego (4) en espera
   { id: 1, miembroId: 1, claseId: 1, fecha: '2026-11-17', estado: 'CONFIRMADA', posicionEspera: null, asistencia: null },
   { id: 2, miembroId: 2, claseId: 1, fecha: '2026-11-17', estado: 'CONFIRMADA', posicionEspera: null, asistencia: null },
   { id: 3, miembroId: 3, claseId: 1, fecha: '2026-11-17', estado: 'CONFIRMADA', posicionEspera: null, asistencia: null },
