@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { miembrosApi } from '../api/miembros'
 import type { Miembro } from '../api/types'
 import { Icono } from '../components/Icono'
@@ -80,9 +81,10 @@ export function MiembrosPage() {
 }
 
 function FilaMiembro({ miembro }: { miembro: Miembro }) {
+  const navegar = useNavigate()
   const membresia = miembro.membresia
   return (
-    <tr>
+    <tr className="clickable-row" onClick={() => navegar(`/miembros/${miembro.id}`)} title="Ver detalle del miembro">
       <td>
         <div className="member-name">
           <span>{iniciales(miembro.nombre)}</span>

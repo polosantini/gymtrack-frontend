@@ -2,7 +2,9 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { useUsuarioActual } from './context/usuarioActual'
 import { ClasesPage } from './pages/ClasesPage'
+import { MiembroDetallePage } from './pages/MiembroDetallePage'
 import { MiembrosPage } from './pages/MiembrosPage'
+import { MiMembresiaPage } from './pages/MiMembresiaPage'
 import { MisReservasPage } from './pages/MisReservasPage'
 import { NotificacionesPage } from './pages/NotificacionesPage'
 import { PagosPage } from './pages/PagosPage'
@@ -16,10 +18,12 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Navigate to={inicio} replace />} />
         <Route path="miembros" element={<MiembrosPage />} />
+        <Route path="miembros/:id" element={<MiembroDetallePage />} />
         <Route path="clases" element={<ClasesPage />} />
         <Route path="pagos" element={<PagosPage />} />
         <Route path="reservar" element={<ReservarPage />} />
         <Route path="mis-reservas" element={<MisReservasPage />} />
+        <Route path="mi-membresia" element={<MiMembresiaPage />} />
         <Route path="notificaciones" element={<NotificacionesPage />} />
         <Route path="*" element={<Navigate to={inicio} replace />} />
       </Route>
