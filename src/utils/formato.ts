@@ -115,3 +115,9 @@ export function textoVencimiento(iso: string): string {
   if (n === 0) return 'Vence hoy'
   return `Venció hace ${-n} ${n === -1 ? 'día' : 'días'}`
 }
+
+/** '2026-11-17T20:30:15' → '17/11/2026 · 8:30 p. m.' */
+export function fechaHora(iso: string): string {
+  const horaMin = iso.slice(11, 16)
+  return horaMin ? `${fecha(iso)} · ${hora(horaMin)}` : fecha(iso)
+}

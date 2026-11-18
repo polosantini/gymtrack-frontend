@@ -13,6 +13,7 @@ export default defineConfig({
     proxy: {
       '/api/miembros': MIEMBROS,
       '/api/planes': MIEMBROS,
+      '/api/membresias': MIEMBROS, // POST /api/membresias/procesar-vencimientos (#32)
       '/api/clases': CLASES,
       '/api/reservas': CLASES,
       '/api/pagos': PAGOS,

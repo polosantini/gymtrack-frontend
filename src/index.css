@@ -94,6 +94,17 @@ body {
     no-repeat right 12px center;
   font-size: 13px;
 }
+.actor select + select {
+  margin-top: 8px;
+}
+.actor-context {
+  display: block;
+  margin: 9px 8px 0;
+  color: #696e77;
+  font-size: 8.5px;
+  line-height: 1.45;
+  white-space: nowrap;
+}
 .sidebar nav p {
   margin: 0 10px 8px;
   color: #686d76;
@@ -197,6 +208,11 @@ main {
   line-height: 1;
   font-weight: 700;
   letter-spacing: -0.8px;
+}
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
 }
 .primary-button {
   min-height: 40px;
@@ -1280,6 +1296,121 @@ td strong {
   color: #858a92;
   font-size: 9.5px;
   line-height: 1.4;
+}
+.notification-section {
+  max-width: 980px;
+}
+.notification-heading {
+  margin-bottom: 15px;
+}
+.notification-heading > span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #56611f;
+  background: #edf5d2;
+  font-weight: 700;
+}
+.notification-list {
+  display: grid;
+  gap: 10px;
+}
+.notification-card {
+  min-height: 116px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid #e4e4df;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px #18191c08;
+}
+.notification-card.notification-unread {
+  border-color: #dbe8be;
+  background: #fbfdf5;
+}
+.notification-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+}
+.notification-icon-spot {
+  color: #4e5a1c;
+  background: #dff46f;
+}
+.notification-icon-expiry {
+  color: #a65d08;
+  background: #fef3c7;
+}
+.notification-icon-payment {
+  color: #15803d;
+  background: #dcfce7;
+}
+.notification-copy {
+  min-width: 0;
+}
+.notification-copy h3 {
+  color: #24272b;
+  font-size: 13px;
+  font-weight: 700;
+}
+.notification-copy p {
+  margin-top: 6px;
+  color: #5f646c;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.notification-copy time {
+  display: block;
+  margin-top: 10px;
+  color: #969aa1;
+  font-size: 9px;
+}
+.notification-card > .badge {
+  align-self: start;
+  margin-top: 2px;
+}
+.notification-loading {
+  opacity: 0.8;
+}
+.notification-skeleton {
+  min-height: 116px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid #e4e4df;
+  border-radius: 12px;
+  background: #fff;
+}
+.notification-skeleton > i {
+  width: 44px;
+  height: 44px;
+}
+.notification-skeleton div {
+  display: grid;
+  gap: 9px;
+}
+.notification-skeleton div i:first-child {
+  width: 32%;
+}
+.notification-skeleton div i:nth-child(2) {
+  width: 68%;
+}
+.notification-skeleton div i:last-child {
+  width: 20%;
+}
+.notification-skeleton i {
+  display: block;
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #eee 25%, #f7f7f4 45%, #eee 65%);
+  background-size: 220% 100%;
+  animation: shimmer 1.4s infinite;
 }
 .back-link {
   margin-bottom: 22px;

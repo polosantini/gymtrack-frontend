@@ -1,6 +1,9 @@
-import { pedir, simular, simularError, USAR_MOCK } from './client'
-import { ahora, hoyMas, miembrosMock, planesMock } from './mock/datos'
+import { pedir, qs, simular, simularError, USAR_MOCK } from './client'
+import { agregarNotificacion, ahora, enDiferido, hoyMas, miembrosMock, planesMock } from './mock/datos'
 import type { Acceso, Membresia, Miembro, NuevoMiembro, Plan, PlanInfo } from './types'
+
+/** Miembros ya avisados hoy de su vencimiento (en el backend: notificadoVencimientoEl). */
+const notificadosHoy = new Map<number, string>()
 
 export const miembrosApi = {
   /** GET /api/miembros → lista con la membresía actual de cada uno. */
@@ -46,7 +49,36 @@ export const miembrosApi = {
     const miembro = miembrosMock.find((m) => m.id === miembroId)
     if (!miembro) return simularError(404, `Miembro no encontrado con id: ${miembroId}`)
     const m = miembro.membresia
-    return simular<Acceso>({ activa: m?.estado === 'ACTIVA', plan: m?.plan ?? null })
+    return simular<Acceso>({ activa: m?.estado === 'ACTIVA' && m.fechaVencimiento >= hoyMas(0), plan: m?.plan ?? null })
+  },
+
+  /**
+   * POST /api/membresias/procesar-vencimientos[?ventanaDias=] → dispara a mano la tarea diaria (#32).
+   * Publica membresia.proxima.vencer por cada membresía ACTIVA que vence dentro de la ventana (7 días por defecto)
+   * y que no se haya notificado hoy. Notificaciones crea la alerta VENCIMIENTO_PROXIMO.
+   */
+  procesarVencimientos: (ventanaDias?: number) => {
+    if (!USAR_MOCK) {
+      return pedir<{ eventosPublicados: number; ventanaDias: number | string }>(
+        `/api/membresias/procesar-vencimientos${qs({ ventanaDias })}`, 'POST')
+    }
+    const dias = ventanaDias ?? 7
+    const hoy = hoyMas(0)
+    const hasta = hoyMas(dias)
+    let publicados = 0
+    for (const m of miembrosMock) {
+      const mem = m.membresia
+      if (!mem || mem.estado !== 'ACTIVA' || mem.fechaVencimiento < hoy || mem.fechaVencimiento > hasta) continue
+      if (notificadosHoy.get(m.id) === hoy) continue // no repetir la alerta el mismo día
+      notificadosHoy.set(m.id, hoy)
+      publicados++
+      const [a, mes, d] = mem.fechaVencimiento.split('-').map(Number)
+      const [ah, mh, dh] = hoy.split('-').map(Number)
+      const restantes = Math.round((new Date(a, mes - 1, d).getTime() - new Date(ah, mh - 1, dh).getTime()) / 86_400_000)
+      const fechaVenc = mem.fechaVencimiento
+      enDiferido(() => agregarNotificacion(m.id, 'VENCIMIENTO_PROXIMO', `Tu membresía vence en ${restantes} día(s) (${fechaVenc})`))
+    }
+    return simular({ eventosPublicados: publicados, ventanaDias: ventanaDias ?? 'default' })
   },
 
   /** GET /api/planes → [{nombre, precioMensual, precioTrimestral, precioAnual}]. */

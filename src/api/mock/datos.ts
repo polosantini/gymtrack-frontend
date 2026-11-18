@@ -31,7 +31,7 @@ export const planesMock: PlanInfo[] = [
 ]
 
 // IDs fijos: clases-service referencia 1–4 en sus reservas de demo.
-//   1 Ana BASICO SUSPENDIDA · 2 Luis FULL ACTIVA · 3 Sara PREMIUM SUSPENDIDA · 4 Diego BASICO ACTIVA
+//   1 Ana BASICO SUSPENDIDA · 2 Luis FULL ACTIVA · 3 Sara PREMIUM SUSPENDIDA · 4 Diego BASICO ACTIVA (vence en 3 días)
 //   5 Carlos FULL VENCIDA · 6 María PREMIUM ACTIVA · 7 Pedro sin membresía
 export const miembrosMock: Miembro[] = [
   { id: 1, nombre: 'Ana', email: 'ana@test.com', fechaRegistro: ahora(),
@@ -41,7 +41,7 @@ export const miembrosMock: Miembro[] = [
   { id: 3, nombre: 'Sara', email: 'sara@test.com', fechaRegistro: ahora(),
     membresia: { id: 3, plan: 'PREMIUM', estado: 'SUSPENDIDA', fechaInicio: hoyMas(0), fechaVencimiento: hoyMas(365) } },
   { id: 4, nombre: 'Diego', email: 'diego@test.com', fechaRegistro: ahora(),
-    membresia: { id: 4, plan: 'BASICO', estado: 'ACTIVA', fechaInicio: hoyMas(0), fechaVencimiento: hoyMas(30) } },
+    membresia: { id: 4, plan: 'BASICO', estado: 'ACTIVA', fechaInicio: hoyMas(0), fechaVencimiento: hoyMas(3) } },
   { id: 5, nombre: 'Carlos', email: 'carlos@test.com', fechaRegistro: ahora(),
     membresia: { id: 5, plan: 'FULL', estado: 'VENCIDA', fechaInicio: hoyMas(-120), fechaVencimiento: hoyMas(-30) } },
   { id: 6, nombre: 'María', email: 'maria@test.com', fechaRegistro: ahora(),
@@ -84,8 +84,8 @@ export const reservasMock: ReservaGuardada[] = [
   { id: 2, miembroId: 2, claseId: 1, fecha: '2026-11-17', estado: 'CONFIRMADA', posicionEspera: null, asistencia: null },
   { id: 3, miembroId: 3, claseId: 1, fecha: '2026-11-17', estado: 'CONFIRMADA', posicionEspera: null, asistencia: null },
   { id: 4, miembroId: 4, claseId: 1, fecha: '2026-11-17', estado: 'EN_ESPERA', posicionEspera: 1, asistencia: null },
-  // Yoga el martes 17: 1 de 10 ocupado
-  { id: 5, miembroId: 2, claseId: 2, fecha: '2026-11-17', estado: 'CONFIRMADA', posicionEspera: null, asistencia: null },
+  // Yoga el martes 17: María (Premium), 1 de 10 ocupado; Luis conserva solo Spinning ese día
+  { id: 5, miembroId: 6, claseId: 2, fecha: '2026-11-17', estado: 'CONFIRMADA', posicionEspera: null, asistencia: null },
   // Historial de asistencia (Spinning del martes 10)
   { id: 6, miembroId: 1, claseId: 1, fecha: '2026-11-10', estado: 'CONFIRMADA', posicionEspera: null, asistencia: true },
   { id: 7, miembroId: 2, claseId: 1, fecha: '2026-11-10', estado: 'CONFIRMADA', posicionEspera: null, asistencia: false },
@@ -103,3 +103,16 @@ export const notificacionesMock: Notificacion[] = [
   { id: 2, miembroId: 2, tipo: 'VENCIMIENTO_PROXIMO', mensaje: 'Tu membresía vence en 7 días', fecha: ahora(), leida: false },
   { id: 3, miembroId: 3, tipo: 'CUPO_LIBERADO', mensaje: 'Se liberó un cupo en tu clase', fecha: ahora(), leida: true },
 ]
+
+/** Crea una notificación como lo hacen los consumidores de pagos-service (Fase 3). */
+export function agregarNotificacion(miembroId: number, tipo: Notificacion['tipo'], mensaje: string): void {
+  notificacionesMock.push({
+    id: Math.max(0, ...notificacionesMock.map((n) => n.id)) + 1,
+    miembroId, tipo, mensaje, fecha: ahora(), leida: false,
+  })
+}
+
+/** Simula la entrega asíncrona de un evento de RabbitMQ (llega un momento después de la respuesta HTTP). */
+export function enDiferido(accion: () => void, ms = 800): void {
+  setTimeout(accion, ms)
+}

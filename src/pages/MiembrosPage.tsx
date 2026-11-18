@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { miembrosApi } from '../api/miembros'
 import type { Miembro } from '../api/types'
 import { Icono } from '../components/Icono'
-import { Badge, ErrorConexion, EsqueletoTabla, EstadoVacio, PageHeader, Toast, type Tono } from '../components/ui'
+import { AlertaFormulario, Badge, ErrorConexion, EsqueletoTabla, EstadoVacio, PageHeader, Toast, type Tono } from '../components/ui'
 import { useCarga } from '../hooks/useCarga'
-import { fecha, iniciales, NOMBRE_ESTADO_MEMBRESIA, NOMBRE_PLAN } from '../utils/formato'
+import { fecha, iniciales, mensajeDe, NOMBRE_ESTADO_MEMBRESIA, NOMBRE_PLAN } from '../utils/formato'
 import { RegistrarMiembroModal } from './RegistrarMiembroModal'
 
 const TONO_ESTADO: Record<string, Tono> = { ACTIVA: 'green', VENCIDA: 'red', SUSPENDIDA: 'amber' }
@@ -16,6 +16,28 @@ export function MiembrosPage() {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [aviso, setAviso] = useState('')
   const cerrarAviso = useCallback(() => setAviso(''), [])
+  const [procesando, setProcesando] = useState(false)
+  const [errorVencimientos, setErrorVencimientos] = useState('')
+
+  // Disparo manual de la tarea diaria membresia.proxima.vencer (#32), para el paso 5 de la demo
+  const procesarVencimientos = async () => {
+    setProcesando(true)
+    setErrorVencimientos('')
+    try {
+      const { eventosPublicados } = await miembrosApi.procesarVencimientos()
+      setAviso(
+        eventosPublicados > 0
+          ? eventosPublicados === 1
+            ? 'Se envió 1 alerta de vencimiento'
+            : `Se enviaron ${eventosPublicados} alertas de vencimiento`
+          : 'No hay membresías por vencer sin avisar en los próximos 7 días',
+      )
+    } catch (e) {
+      setErrorVencimientos(mensajeDe(e))
+    } finally {
+      setProcesando(false)
+    }
+  }
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase()
@@ -30,7 +52,17 @@ export function MiembrosPage() {
 
   return (
     <>
-      <PageHeader titulo="Miembros" accion="+ Nuevo miembro" alAccionar={() => setModalAbierto(true)} />
+      <PageHeader
+        titulo="Miembros"
+        accion="+ Nuevo miembro"
+        alAccionar={() => setModalAbierto(true)}
+        extra={
+          <button className="secondary-button" onClick={() => void procesarVencimientos()} disabled={procesando}>
+            {procesando ? 'Procesando…' : 'Procesar vencimientos'}
+          </button>
+        }
+      />
+      {errorVencimientos && <AlertaFormulario mensaje={errorVencimientos} />}
       {error && <ErrorConexion mensaje={error} reintentar={recargar} />}
       <section className="panel">
         <div className="toolbar">

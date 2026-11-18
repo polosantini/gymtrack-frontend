@@ -17,16 +17,17 @@ const MENU_ADMIN: ItemMenu[] = [
   { ruta: '/pagos', texto: 'Pagos', icono: 'card' },
 ]
 
-// Notificaciones entra al menú en la Fase 3 (#36); la ruta /notificaciones ya existe.
 const MENU_MIEMBRO: ItemMenu[] = [
   { ruta: '/reservar', texto: 'Reservar clases', icono: 'calendar' },
   { ruta: '/mis-reservas', texto: 'Mis reservas', icono: 'list' },
   { ruta: '/mi-membresia', texto: 'Mi membresía', icono: 'card' },
+  { ruta: '/notificaciones', texto: 'Notificaciones', icono: 'bell' },
 ]
 
 export function Layout() {
   const { usuario, setUsuario } = useUsuarioActual()
-  const miembros = useCarga(() => miembrosApi.listar())
+  // Se recarga al cambiar de actor: así el plan y el estado del pie reflejan pagos recientes
+  const miembros = useCarga(() => miembrosApi.listar(), [usuario])
   const navegar = useNavigate()
   const esAdmin = usuario.rol === 'ADMIN'
   const menu = esAdmin ? MENU_ADMIN : MENU_MIEMBRO
@@ -40,14 +41,20 @@ export function Layout() {
         ? `Plan ${NOMBRE_PLAN[membresia.plan]}`
         : `Membresía ${NOMBRE_ESTADO_MEMBRESIA[membresia.estado].toLowerCase()}`
 
-  const cambiar = (valor: string) => {
-    if (valor === 'ADMIN') {
+  const elegirMiembro = (id: number) => {
+    const m = miembros.datos?.find((x) => x.id === id)
+    if (!m) return
+    setUsuario({ rol: 'MIEMBRO', miembroId: m.id, nombre: m.nombre })
+    navegar('/reservar')
+  }
+
+  const cambiarRol = (rol: string) => {
+    if (rol === 'ADMIN') {
       setUsuario({ rol: 'ADMIN' })
-    } else {
-      const m = miembros.datos?.find((x) => x.id === Number(valor))
-      if (m) setUsuario({ rol: 'MIEMBRO', miembroId: m.id, nombre: m.nombre })
+      navegar('/miembros')
+    } else if (miembros.datos?.length) {
+      elegirMiembro(miembros.datos[0].id) // por defecto el primero; se cambia en el segundo selector
     }
-    navegar('/') // vuelve al inicio del nuevo rol
   }
 
   return (
@@ -58,15 +65,31 @@ export function Layout() {
           <span>GymTrack</span>
         </div>
         <div className="actor">
-          <label htmlFor="actor">Actuar como</label>
-          <select id="actor" value={esAdmin ? 'ADMIN' : usuario.miembroId} onChange={(e) => cambiar(e.target.value)}>
+          <label htmlFor="actor-rol">Actuar como</label>
+          <select id="actor-rol" value={esAdmin ? 'ADMIN' : 'MIEMBRO'} onChange={(e) => cambiarRol(e.target.value)}>
             <option value="ADMIN">Administrador</option>
-            {miembros.datos?.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nombre}
-              </option>
-            ))}
+            <option value="MIEMBRO" disabled={!miembros.datos?.length}>
+              Miembro
+            </option>
           </select>
+          {!esAdmin && (
+            <select
+              id="actor-miembro"
+              aria-label="Miembro"
+              value={usuario.miembroId}
+              onChange={(e) => elegirMiembro(Number(e.target.value))}
+            >
+              {miembros.datos?.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.nombre}
+                </option>
+              ))}
+            </select>
+          )}
+          {/* Etiqueta para la demo: lo que viaja en cada petición (el backend lo ignora) */}
+          <small className="actor-context">
+            X-Role: {esAdmin ? 'ADMIN' : `MEMBER · X-User-Id: ${usuario.miembroId}`}
+          </small>
         </div>
         <nav aria-label="Navegación principal">
           <p>{esAdmin ? 'GESTIÓN' : 'MI ESPACIO'}</p>
