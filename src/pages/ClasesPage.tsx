@@ -3,6 +3,7 @@ import { clasesApi } from '../api/clases'
 import type { Clase } from '../api/types'
 import { Icono } from '../components/Icono'
 import { ErrorConexion, EsqueletoHorario, EstadoVacio, PageHeader, Toast } from '../components/ui'
+import { useUsuarioActual } from '../context/usuarioActual'
 import { useCarga } from '../hooks/useCarga'
 import { DIAS, hora } from '../utils/formato'
 import { CrearClaseModal } from './CrearClaseModal'
@@ -11,6 +12,7 @@ import { CrearClaseModal } from './CrearClaseModal'
 // Los cupos libres dependen de cada fecha y se ven en Reservar (fase 2).
 export function ClasesPage() {
   const { datos, cargando, error, recargar, setDatos } = useCarga(() => clasesApi.listar())
+  const esAdmin = useUsuarioActual().usuario.rol === 'ADMIN' // "Crear clase" solo para ADMIN
   const [modalAbierto, setModalAbierto] = useState(false)
   const [aviso, setAviso] = useState('')
   const cerrarAviso = useCallback(() => setAviso(''), [])
@@ -25,7 +27,7 @@ export function ClasesPage() {
 
   return (
     <>
-      <PageHeader titulo="Clases" accion="+ Nueva clase" alAccionar={() => setModalAbierto(true)} />
+      <PageHeader titulo="Clases" accion={esAdmin ? '+ Nueva clase' : undefined} alAccionar={() => setModalAbierto(true)} />
       {error && <ErrorConexion mensaje={error} reintentar={recargar} />}
 
       {cargando ? (
@@ -60,11 +62,11 @@ export function ClasesPage() {
         </section>
       ) : error ? null : (
         <section className="panel">
-          <EstadoVacio texto="Aún no hay clases creadas" accion="+ Nueva clase" alAccionar={() => setModalAbierto(true)} />
+          <EstadoVacio texto="Aún no hay clases creadas" accion={esAdmin ? '+ Nueva clase' : undefined} alAccionar={() => setModalAbierto(true)} />
         </section>
       )}
 
-      {modalAbierto && <CrearClaseModal alCerrar={() => setModalAbierto(false)} alCrear={alCrear} />}
+      {esAdmin && modalAbierto && <CrearClaseModal alCerrar={() => setModalAbierto(false)} alCrear={alCrear} />}
       {aviso && <Toast mensaje={aviso} alCerrar={cerrarAviso} />}
     </>
   )

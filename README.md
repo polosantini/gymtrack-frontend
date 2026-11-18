@@ -11,8 +11,8 @@ npm run dev
 
 Abre http://localhost:5173.
 
-- `VITE_USAR_MOCK=true` en `.env` usa los datos simulados de `src/api/mock/datos.ts`.
-- `VITE_USAR_MOCK=false` llama al backend real. El proxy de `vite.config.ts` manda `/api/miembros` y `/api/planes` al puerto 8081, `/api/clases` y `/api/reservas` al 8082, y `/api/pagos` y `/api/notificaciones` al 8083.
+- Por defecto (sin `.env`, o con `VITE_USAR_MOCK=false`) la app llama al backend real. El proxy de `vite.config.ts` manda `/api/miembros`, `/api/planes` y `/api/membresias` al puerto 8081, `/api/clases` y `/api/reservas` al 8082, y `/api/pagos` y `/api/notificaciones` al 8083.
+- `VITE_USAR_MOCK=true` en `.env` usa los datos simulados de `src/api/mock/datos.ts` (sirve para trabajar sin levantar el backend).
 
 ### Probar los estados con datos simulados
 
@@ -30,20 +30,32 @@ Los datos simulados copian los `data.sql` del backend (7 miembros; Spinning, Yog
 | Rol (selector "Actuar como") | Pantallas |
 |---|---|
 | Administrador | Miembros (lista, registro y detalle en `/miembros/:id`), Clases, Pagos |
-| Miembro | Reservar clases, Mis reservas, Mi membresía |
+| Miembro | Reservar clases, Mis reservas, Mi membresía, Notificaciones |
+
+El selector "Actuar como" tiene dos listas: el rol (Administrador o Miembro) y, si es miembro, cuál. Cada petición lleva los headers `X-Role: ADMIN|MEMBER` y `X-User-Id: <id>`; el backend los ignora, son solo una etiqueta para la demo (no hay JWT ni autorización real). Un miembro que entre por URL a una pantalla de gestión vuelve a "Reservar clases".
+
+### Los 3 flujos de mensajería en la interfaz (Fase 3)
+
+| Flujo | Cómo verlo |
+|---|---|
+| `pago.registrado` | Como administrador, en Pagos registra un pago para Ana → la membresía pasa a ACTIVA y, como Ana, en Notificaciones aparece "Pago confirmado". |
+| `membresia.proxima.vencer` | Como administrador, en Miembros pulsa "Procesar vencimientos" → como Diego (vence en 3 días), en Notificaciones aparece "Tu membresía está por vencer". |
+| `reserva.cancelada` → `reserva.cupo.asignado` | Como Luis, cancela Spinning del martes 17 → como Diego (estaba en espera), su reserva pasa a confirmada y en Notificaciones aparece "Se liberó un cupo para ti". |
+
+Los eventos viajan por RabbitMQ, así que el resultado aparece un momento después: usa "Actualizar" en Notificaciones o vuelve a entrar a la pantalla.
 
 Miembros de demo para probar las reglas de reserva:
 
 | Miembro | Plan | Estado | Qué se prueba |
 |---|---|---|---|
-| Diego | Básico | Activa | 3.ª reserva de la semana rechazada; está en la espera de Spinning del 17 |
+| Diego | Básico | Activa (vence en 3 días) | 3.ª reserva de la semana rechazada; está en la espera de Spinning del 17; alerta de vencimiento |
 | Luis | Full | Activa | 2.ª reserva del mismo día rechazada |
 | María | Premium | Activa | Sin límite; Spinning del 17 lleno → lista de espera |
 | Ana, Sara | Básico, Premium | Suspendida | "La membresía no está activa" |
 | Carlos | Full | Vencida | Sin acceso |
 | Pedro | — | Sin membresía | Sin acceso |
 
-Las reservas simuladas aplican las mismas reglas que el backend (membresía activa, fecha de la clase, reserva repetida, regla del plan, aforo y lista de espera). Cancelar todavía no pasa el cupo al siguiente en espera: eso llega con la Fase 3.
+Con `VITE_USAR_MOCK=true` los datos simulados aplican las mismas reglas que el backend (membresía activa, fecha de la clase, reserva repetida, regla del plan, aforo y lista de espera) y simulan los 3 flujos de mensajería con un pequeño retraso.
 
 ## Scripts
 

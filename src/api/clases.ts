@@ -1,5 +1,5 @@
 import { pedir, qs, simular, simularError, USAR_MOCK } from './client'
-import { clasesMock, fechaIso, miembrosMock, reservasMock, type ClaseGuardada, type ReservaGuardada } from './mock/datos'
+import { agregarNotificacion, clasesMock, enDiferido, fechaIso, miembrosMock, reservasMock, type ClaseGuardada, type ReservaGuardada } from './mock/datos'
 import type { Clase, DiaSemana, NuevaClase, NuevaReserva, Reserva, ReservasDeSesion } from './types'
 
 // ---------- Cálculos que en el backend hace ClaseServiceImpl (solo para los mocks) ----------
@@ -178,15 +178,18 @@ export const reservasApi = {
 
   /**
    * PATCH /api/reservas/{id}/cancelar → la reserva queda CANCELADA.
-   * Las posiciones de los demás no se renumeran. Pasar el cupo al primero de la espera es Fase 3 (Observer).
+   * Si era CONFIRMADA, el backend publica reserva.cancelada (Observer) y un consumidor pasa el cupo
+   * al primero de la lista de espera, que recibe la notificación CUPO_LIBERADO. Llega un momento después.
    */
   cancelar: (id: number) => {
     if (!USAR_MOCK) return pedir<Reserva>(`/api/reservas/${id}/cancelar`, 'PATCH')
     const r = reservasMock.find((x) => x.id === id)
     if (!r) return simularError(404, `Reserva no encontrada con id: ${id}`)
     if (r.estado === 'CANCELADA') return simularError(409, `La reserva ${id} ya está cancelada`)
+    const liberaCupo = r.estado === 'CONFIRMADA'
     r.estado = 'CANCELADA'
     r.posicionEspera = null
+    if (liberaCupo) enDiferido(() => asignarCupo(r.claseId, r.fecha))
     return simular(aReserva(r))
   },
 
@@ -201,4 +204,20 @@ export const reservasApi = {
     r.asistencia = asistio
     return simular(aReserva(r))
   },
+}
+
+// ---------- Consumidor de reserva.cancelada (copia de AsignarCupoService, solo mocks) ----------
+function asignarCupo(claseId: number, fecha: string): void {
+  const clase = clasesMock.find((c) => c.id === claseId)
+  if (!clase || cuposLibres(clase, fecha) === 0) return
+  const espera = reservasMock
+    .filter((r) => r.claseId === claseId && r.fecha === fecha && r.estado === 'EN_ESPERA')
+    .sort((a, b) => (a.posicionEspera ?? 0) - (b.posicionEspera ?? 0))
+  const primera = espera[0]
+  if (!primera) return
+  primera.estado = 'CONFIRMADA'
+  primera.posicionEspera = null
+  // Al asignar un cupo las posiciones restantes se ajustan (1, 2, 3…)
+  espera.slice(1).forEach((r, i) => (r.posicionEspera = i + 1))
+  agregarNotificacion(primera.miembroId, 'CUPO_LIBERADO', `Se liberó un cupo en ${clase.nombre} el ${fecha} a las ${clase.hora}`)
 }

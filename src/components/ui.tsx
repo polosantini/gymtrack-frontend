@@ -8,11 +8,13 @@ export function Badge({ children, tono = 'neutral' }: { children: ReactNode; ton
   return <span className={`badge badge-${tono}`}>{children}</span>
 }
 
-export function PageHeader({ titulo, accion, alAccionar, contexto = 'Panel de administración' }: {
+export function PageHeader({ titulo, accion, alAccionar, contexto = 'Panel de administración', extra }: {
   titulo: string
   accion?: string
   alAccionar?: () => void
   contexto?: string
+  /** Botones adicionales a la izquierda de la acción principal */
+  extra?: ReactNode
 }) {
   return (
     <header className="page-header">
@@ -20,10 +22,15 @@ export function PageHeader({ titulo, accion, alAccionar, contexto = 'Panel de ad
         <p>{contexto}</p>
         <h1>{titulo}</h1>
       </div>
-      {accion && (
-        <button className="primary-button" onClick={alAccionar}>
-          {accion}
-        </button>
+      {(extra || accion) && (
+        <div className="page-header-actions">
+          {extra}
+          {accion && (
+            <button className="primary-button" onClick={alAccionar}>
+              {accion}
+            </button>
+          )}
+        </div>
       )}
     </header>
   )

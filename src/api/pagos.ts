@@ -1,6 +1,6 @@
 import { pedir, qs, simular, simularError, USAR_MOCK } from './client'
-import { ahora, notificacionesMock, pagosMock } from './mock/datos'
-import type { NuevoPago, Notificacion, Pago } from './types'
+import { agregarNotificacion, ahora, enDiferido, fechaIso, miembrosMock, notificacionesMock, pagosMock } from './mock/datos'
+import type { NuevoPago, Notificacion, Pago, Periodo } from './types'
 
 export const pagosApi = {
   /** POST /api/pagos {miembroId, plan, periodo, monto, metodo} → 201 con estado REGISTRADO. */
@@ -14,6 +14,12 @@ export const pagosApi = {
       fecha: ahora(),
     }
     pagosMock.push(nuevo) // se guarda en memoria hasta recargar la página
+    // pago.registrado llega por RabbitMQ un momento después: Miembros activa y Notificaciones avisa
+    enDiferido(() => {
+      activarMembresia(nuevo)
+      agregarNotificacion(nuevo.miembroId, 'CONFIRMACION_PAGO',
+        `Pago registrado: plan ${nuevo.plan} por periodo ${nuevo.periodo} — $${nuevo.monto}`)
+    })
     return simular(nuevo)
   },
 
@@ -30,4 +36,23 @@ export const notificacionesApi = {
     USAR_MOCK
       ? simular(notificacionesMock.filter((n) => n.miembroId === miembroId).sort((a, b) => b.fecha.localeCompare(a.fecha)))
       : pedir<Notificacion[]>(`/api/notificaciones${qs({ miembroId })}`),
+}
+
+// ---------- Consumidor de pago.registrado en Miembros (copia de PagoRegistradoListener, solo mocks) ----------
+function sumarPeriodo(base: string, periodo: Periodo): string {
+  const [a, m, d] = base.split('-').map(Number)
+  const meses = periodo === 'MENSUAL' ? 1 : periodo === 'TRIMESTRAL' ? 3 : 12
+  return fechaIso(new Date(a, m - 1 + meses, d))
+}
+
+function activarMembresia(pago: Pago): void {
+  const membresia = miembrosMock.find((m) => m.id === pago.miembroId)?.membresia
+  if (!membresia) return // sin membresía el backend descarta el evento: hay que crearla antes de pagar
+  const hoy = fechaIso(new Date())
+  const renovacion = membresia.estado === 'ACTIVA' && membresia.fechaVencimiento >= hoy
+  const base = renovacion ? membresia.fechaVencimiento : hoy
+  if (!renovacion) membresia.fechaInicio = hoy
+  membresia.plan = pago.plan
+  membresia.estado = 'ACTIVA'
+  membresia.fechaVencimiento = sumarPeriodo(base, pago.periodo)
 }

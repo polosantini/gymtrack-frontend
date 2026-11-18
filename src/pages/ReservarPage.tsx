@@ -88,6 +88,8 @@ function Reservar({ miembroId }: { miembroId: number }) {
       setAviso('Reserva cancelada')
       void reservas.recargar()
       void clases.recargar()
+      // El cupo liberado pasa al primero en espera por RabbitMQ (Fase 3): se vuelve a consultar un momento después
+      window.setTimeout(() => void clases.recargar(), 1500)
     } catch (e) {
       setErrorCancelar(mensajeDe(e))
     } finally {

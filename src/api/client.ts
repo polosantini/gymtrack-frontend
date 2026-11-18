@@ -1,8 +1,22 @@
 // Cliente HTTP común. Todas las llamadas al backend pasan por aquí.
 import type { ErrorApi } from './types'
 
-// Por defecto usa datos simulados; con VITE_USAR_MOCK=false en el .env llama al backend real
-export const USAR_MOCK = import.meta.env.VITE_USAR_MOCK !== 'false'
+// Por defecto llama al backend real (Fase 3, #36). Con VITE_USAR_MOCK=true en el .env usa los datos simulados.
+export const USAR_MOCK = import.meta.env.VITE_USAR_MOCK === 'true'
+
+// ---------- Selector "actuar como" (alcance mínimo, no es JWT) ----------
+// Cada petición lleva X-Role (ADMIN | MEMBER) y, si es un miembro, X-User-Id.
+// El backend ignora estos headers: solo identifican quién actúa en la demo.
+let cabecerasDeRol: Record<string, string> = { 'X-Role': 'ADMIN' }
+
+export function setActorActual(actor: { rol: 'ADMIN' } | { rol: 'MIEMBRO'; miembroId: number }) {
+  cabecerasDeRol =
+    actor.rol === 'ADMIN' ? { 'X-Role': 'ADMIN' } : { 'X-Role': 'MEMBER', 'X-User-Id': String(actor.miembroId) }
+}
+
+export function cabecerasActuales(): Record<string, string> {
+  return { ...cabecerasDeRol }
+}
 
 export class ApiError extends Error {
   status: number
@@ -20,7 +34,10 @@ export async function pedir<T>(ruta: string, metodo: Metodo = 'GET', cuerpo?: un
   try {
     respuesta = await fetch(ruta, {
       method: metodo,
-      headers: cuerpo !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      headers: {
+        ...cabecerasDeRol,
+        ...(cuerpo !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      },
       body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
     })
   } catch {
@@ -47,6 +64,7 @@ function mensajePorEstado(status: number): string {
   if (status === 400) return 'Los datos enviados no son válidos'
   if (status === 404) return 'No encontramos lo que buscabas'
   if (status === 409) return 'La operación entra en conflicto con los datos existentes'
+  // Sin cuerpo JSON y con 5xx suele ser el proxy de Vite (o nginx) sin poder llegar al servicio
   if (status >= 500) return 'No hay conexión con el servidor'
   return `Error ${status}`
 }

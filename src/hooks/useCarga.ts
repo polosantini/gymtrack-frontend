@@ -6,13 +6,16 @@ export function useCarga<T>(cargar: () => Promise<T>, deps: unknown[] = []) {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const recargar = useCallback(async () => {
+  /** Vuelve a cargar; devuelve true si salió bien. */
+  const recargar = useCallback(async (): Promise<boolean> => {
     setCargando(true)
     setError(null)
     try {
       setDatos(await cargar())
+      return true
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error desconocido')
+      return false
     } finally {
       setCargando(false)
     }
