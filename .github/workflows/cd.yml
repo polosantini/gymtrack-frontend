@@ -1,0 +1,42 @@
+name: CD frontend
+
+# Publica la imagen en GHCR solo al fusionar en main, y solo si lint y build pasan.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Mismas verificaciones que la CI: si fallan, no se publica nada.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+      - name: Nombre de la imagen en minúsculas
+        id: imagen
+        run: echo "ruta=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.imagen.outputs.ruta }}:latest
+            ${{ steps.imagen.outputs.ruta }}:${{ github.sha }}
