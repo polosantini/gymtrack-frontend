@@ -1,4 +1,4 @@
-import { useCallback, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { miembrosApi } from '../api/miembros'
 import { pagosApi } from '../api/pagos'
 import type { Miembro, Pago, Periodo, Plan, PlanInfo } from '../api/types'
@@ -7,8 +7,10 @@ import {
   AlertaFormulario, Badge, Campo, ErrorConexion, EsqueletoTabla, EstadoVacio, PageHeader, Toast, type Tono,
 } from '../components/ui'
 import { useCarga } from '../hooks/useCarga'
+import { estadoMostrado, TONO_MEMBRESIA } from '../utils/estados'
 import {
-  fecha, mensajeDe, METODOS_PAGO, NOMBRE_ESTADO_PAGO, NOMBRE_PERIODO, NOMBRE_PLAN, nombreMetodo, pesos,
+  fecha, mensajeDe, METODOS_PAGO, NOMBRE_ESTADO_MEMBRESIA, NOMBRE_ESTADO_PAGO, NOMBRE_PERIODO, NOMBRE_PLAN,
+  nombreMetodo, pesos,
 } from '../utils/formato'
 
 const TONO_PAGO: Record<string, Tono> = { REGISTRADO: 'neutral', COMPLETADO: 'green', PENDIENTE: 'amber', FALLIDO: 'red' }
@@ -26,11 +28,41 @@ export function PagosPage() {
   const [aviso, setAviso] = useState('')
   const cerrarAviso = useCallback(() => setAviso(''), [])
 
-  const nombre = base.datos?.miembros.find((m) => m.id === idActual)?.nombre ?? ''
+  const miembroActual = base.datos?.miembros.find((m) => m.id === idActual) ?? null
+  const nombre = miembroActual?.nombre ?? ''
+  const membresia = miembroActual?.membresia ?? null
+  const estadoMembresia = membresia ? estadoMostrado(membresia) : null
+
+  // Quien activa la membresía es miembros-service al consumir pago.registrado, así que al
+  // volver el POST el estado de esta pantalla ya quedó viejo. Se vuelve a consultar solo
+  // ese miembro y se reemplaza en la lista: sin setCargando, para no reiniciar el formulario.
+  const [refrescando, setRefrescando] = useState(false)
+  const { setDatos: setBase } = base
+  const refrescarMiembro = useCallback(async (id: number) => {
+    if (!id) return
+    setRefrescando(true)
+    try {
+      const actualizado = await miembrosApi.obtener(id)
+      setBase((previo) => previo && {
+        ...previo,
+        miembros: previo.miembros.map((m) => (m.id === actualizado.id ? actualizado : m)),
+      })
+    } catch {
+      // Se deja el estado anterior en pantalla; el botón "Actualizar" permite reintentar.
+    } finally {
+      setRefrescando(false)
+    }
+  }, [setBase])
+
+  // Una sola consulta diferida tras el pago, no un sondeo: la activación es asíncrona.
+  const temporizador = useRef<number>(undefined)
+  useEffect(() => () => window.clearTimeout(temporizador.current), [])
 
   const alRegistrar = (pago: Pago) => {
     if (pago.miembroId === idActual) pagos.setDatos([...(pagos.datos ?? []), pago])
-    setAviso('Pago registrado. La membresía se activará en unos segundos.')
+    setAviso('Pago registrado. La membresía se activa en unos segundos.')
+    window.clearTimeout(temporizador.current)
+    temporizador.current = window.setTimeout(() => void refrescarMiembro(pago.miembroId), 2500)
   }
 
   const lista = [...(pagos.datos ?? [])].sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id)
@@ -58,7 +90,18 @@ export function PagosPage() {
                 <h2>Pagos de {nombre || 'este miembro'}</h2>
                 <p>Historial del miembro seleccionado</p>
               </div>
-              <span>{lista.length} {lista.length === 1 ? 'pago' : 'pagos'}</span>
+              <div className="recent-heading-side">
+                {/* Estado real tras el pago: se ve la activación sin salir de la pantalla */}
+                {membresia && estadoMembresia ? (
+                  <Badge tono={TONO_MEMBRESIA[estadoMembresia]}>{NOMBRE_ESTADO_MEMBRESIA[estadoMembresia]}</Badge>
+                ) : (
+                  <Badge>Sin membresía</Badge>
+                )}
+                <button type="button" className="link-button" onClick={() => void refrescarMiembro(idActual)} disabled={refrescando}>
+                  {refrescando ? 'Actualizando…' : 'Actualizar'}
+                </button>
+                <span>{lista.length} {lista.length === 1 ? 'pago' : 'pagos'}</span>
+              </div>
             </div>
             {pagos.error ? (
               <ErrorConexion mensaje={pagos.error} reintentar={pagos.recargar} />
