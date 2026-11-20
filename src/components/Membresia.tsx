@@ -1,12 +1,14 @@
 // Piezas compartidas por las vistas del miembro y el detalle de miembro (diseño de Figma Make).
 import type { Acceso, Membresia, Reserva } from '../api/types'
-import { TONO_MEMBRESIA } from '../utils/estados'
+import { estadoMostrado, TONO_MEMBRESIA } from '../utils/estados'
 import { fecha, fechaLarga, NOMBRE_ESTADO_MEMBRESIA, NOMBRE_PLAN, textoVencimiento } from '../utils/formato'
 import { Icono } from './Icono'
 import { Badge, Modal } from './ui'
 
 /** Tarjeta "Membresía actual": plan, estado y fechas. */
 export function TarjetaMembresia({ membresia, compacta = false }: { membresia: Membresia | null; compacta?: boolean }) {
+  // No se muestra membresia.estado tal cual: una ACTIVA con la fecha pasada se presenta como vencida.
+  const estado = membresia ? estadoMostrado(membresia) : null
   return (
     <section className={`panel membership-card ${compacta ? 'compact' : ''}`}>
       <div className="detail-card-heading">
@@ -14,8 +16,8 @@ export function TarjetaMembresia({ membresia, compacta = false }: { membresia: M
           <p>Membresía actual</p>
           <h2>{membresia ? `Plan ${NOMBRE_PLAN[membresia.plan] ?? membresia.plan}` : 'Sin membresía'}</h2>
         </div>
-        {membresia ? (
-          <Badge tono={TONO_MEMBRESIA[membresia.estado]}>{NOMBRE_ESTADO_MEMBRESIA[membresia.estado] ?? membresia.estado}</Badge>
+        {membresia && estado ? (
+          <Badge tono={TONO_MEMBRESIA[estado]}>{NOMBRE_ESTADO_MEMBRESIA[estado] ?? estado}</Badge>
         ) : (
           <Badge>Sin membresía</Badge>
         )}

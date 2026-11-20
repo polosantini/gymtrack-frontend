@@ -581,6 +581,22 @@ td strong {
   color: #8a8f97;
   font-size: 10px;
 }
+.recent-heading-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.recent-heading-side > span {
+  color: #8a8f97;
+  font-size: 10px;
+}
+.link-button {
+  padding: 0;
+  border: 0;
+  color: #40444b;
+  font-size: 11.5px;
+  text-decoration: underline;
+}
 .recent-payments th,
 .recent-payments td {
   padding-left: 13px;
@@ -735,6 +751,11 @@ td strong {
 .form-grid {
   display: grid;
   gap: 15px;
+}
+.form-hint {
+  margin: -4px 0 0;
+  color: #8a8f97;
+  font-size: 11.5px;
 }
 .form-alert {
   margin-bottom: 15px;

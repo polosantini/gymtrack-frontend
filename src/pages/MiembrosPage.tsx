@@ -5,6 +5,7 @@ import type { Miembro } from '../api/types'
 import { Icono } from '../components/Icono'
 import { AlertaFormulario, Badge, ErrorConexion, EsqueletoTabla, EstadoVacio, PageHeader, Toast, type Tono } from '../components/ui'
 import { useCarga } from '../hooks/useCarga'
+import { estadoMostrado } from '../utils/estados'
 import { fecha, iniciales, mensajeDe, NOMBRE_ESTADO_MEMBRESIA, NOMBRE_PLAN } from '../utils/formato'
 import { RegistrarMiembroModal } from './RegistrarMiembroModal'
 
@@ -115,6 +116,8 @@ export function MiembrosPage() {
 function FilaMiembro({ miembro }: { miembro: Miembro }) {
   const navegar = useNavigate()
   const membresia = miembro.membresia
+  // Mismo criterio que GET /acceso: una ACTIVA con la fecha pasada se muestra como vencida.
+  const estado = membresia ? estadoMostrado(membresia) : null
   return (
     <tr className="clickable-row" onClick={() => navegar(`/miembros/${miembro.id}`)} title="Ver detalle del miembro">
       <td>
@@ -128,8 +131,8 @@ function FilaMiembro({ miembro }: { miembro: Miembro }) {
       </td>
       <td className={membresia ? '' : 'muted'}>{membresia ? NOMBRE_PLAN[membresia.plan] : '—'}</td>
       <td>
-        {membresia ? (
-          <Badge tono={TONO_ESTADO[membresia.estado]}>{NOMBRE_ESTADO_MEMBRESIA[membresia.estado]}</Badge>
+        {membresia && estado ? (
+          <Badge tono={TONO_ESTADO[estado]}>{NOMBRE_ESTADO_MEMBRESIA[estado]}</Badge>
         ) : (
           <Badge>Sin membresía</Badge>
         )}
@@ -137,7 +140,7 @@ function FilaMiembro({ miembro }: { miembro: Miembro }) {
       <td className="date-cell">
         {membresia ? (
           <>
-            <small>{membresia.estado === 'VENCIDA' ? 'Venció' : 'Vence'}</small>
+            <small>{estado === 'VENCIDA' ? 'Venció' : 'Vence'}</small>
             {fecha(membresia.fechaVencimiento)}
           </>
         ) : (
